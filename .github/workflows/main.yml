@@ -1,13 +1,44 @@
+# Name of the workflow that will appear in GitHub Actions
 name: Deploy Frontend
+
+# When to trigger this workflow
 on:
   push:
     branches:
-      - master
+      - master    # Only run when code is pushed to master branch
+
+
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
+  build:    # Name of the job
+    runs-on: ubuntu-latest    # Use the latest Ubuntu runner
+
+    steps:    # List of steps to execute
+      # Step 1: Checkout the code from your repository
+      - uses: actions/checkout@v3
+
+      # Step 2: Login to Docker Hub using your stored secrets
       - run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Step 3: Build your Docker image using the development Dockerfile
       - run: docker build -t cygetops/react-test -f Dockerfile.dev .
+
+      # Step 4: Run tests inside the Docker container
       - run: docker run -e CI=true cygetops/react-test npm test
+
+      # Step 5: Create a zip file of your application for deployment
+      # Excludes .git directory to keep the package size smaller
+      - name: Generate deployment package 
+        run: zip -r deploy.zip . -x '*.git*' 
+      
+      # Step 6: Deploy to AWS Elastic Beanstalk
+      - name: Deploy to EB 
+        uses: einaregilsson/beanstalk-deploy@v18    # Uses a third-party action for EB deployment
+        with: 
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          application_name: frontend    # Your EB application name
+          environment_name: Frontend-env    # Your EB environment name
+          existing_bucket_name: elasticbeanstalk-ap-south-1-210148376659    # S3 bucket for deployment
+          region: ap-south-1    # AWS region (Mumbai)
+          version_label: ${{ github.sha }}    # Uses commit SHA as version label
+          deployment_package: deploy.zip    # The zip file to deploy
