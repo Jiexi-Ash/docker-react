@@ -34,7 +34,7 @@ jobs:
       - name: Deploy to EB 
         uses: einaregilsson/beanstalk-deploy@v18    # Uses a third-party action for EB deployment
         with: 
-          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY }}
           aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
           application_name: frontend    # Your EB application name
           environment_name: Frontend-env    # Your EB environment name
